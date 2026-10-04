@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>متتبع مراجعة البنود</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{
+  --bg:#f4f6fa; --surface:#fff; --surface2:#f8f9fc; --border:#e3e7ef; --text:#1b2333; --muted:#677189;
+  --primary:#2457d6; --primary-d:#1b44ab; --primary-soft:#e8eefc;
+  --ok:#14804a; --ok-soft:#e3f5ec; --warn:#b36a00; --warn-soft:#fff2dc; --bad:#c62f3a; --bad-soft:#fde8ea;
+  --shadow:0 1px 2px rgba(20,30,60,.06),0 6px 20px rgba(20,30,60,.06); --r:14px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1420; --surface:#171e2e; --surface2:#1c2437; --border:#27324a; --text:#e9eef9; --muted:#93a0bb;
+  --primary:#6d9bff; --primary-d:#5b8aef; --primary-soft:#1d2a4a;
+  --ok:#4cc58a; --ok-soft:#14301f; --warn:#f0b04a; --warn-soft:#38290f; --bad:#ff7b84; --bad-soft:#3a1a1e;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:15px/1.6 "Segoe UI","Tahoma",sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+#app{height:100%;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:16px;padding:12px 28px;background:var(--surface);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#7a5cff);display:grid;place-items:center;color:#fff}
+.spacer{flex:1}
+.chip-user{display:flex;align-items:center;gap:10px;padding:5px 14px 5px 6px;border:1px solid var(--border);border-radius:99px;background:var(--surface2)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:700}
+.chip-user small{color:var(--muted);display:block;line-height:1.1}
+.main{flex:1;overflow:auto;padding:24px 28px 40px}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px} h2{font-size:17px;margin:0 0 12px} .sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:20px}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:9px 16px;cursor:pointer;transition:.15s;display:inline-flex;gap:8px;align-items:center;font-weight:600}
+.btn:hover{background:var(--surface2)} .btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.row:focus-visible{outline:3px solid var(--primary-soft);outline-offset:1px;border-color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}.btn.primary:hover{background:var(--primary-d)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}.btn.ok:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--bad)} .btn.sm{padding:5px 11px;font-size:13px} .btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.big{padding:14px 18px;font-size:16px;justify-content:center;text-align:center}
+label.f{display:block;margin-bottom:14px;font-weight:600;font-size:14px}
+label.f>span{display:block;margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:var(--surface);transition:.15s}
+input[dir=ltr]{text-align:left}
+.auth{min-height:100%;display:grid;place-items:center;padding:24px;background:radial-gradient(1200px 500px at 80% -10%,var(--primary-soft),transparent),var(--bg)}
+.auth .card{width:min(440px,100%);padding:32px}
+.auth .logo{width:52px;height:52px;border-radius:15px;margin:0 auto 14px}
+.center{text-align:center}
+.err{background:var(--bad-soft);color:var(--bad);padding:9px 13px;border-radius:10px;margin-bottom:14px;font-size:14px}
+.link{background:none;border:0;color:var(--primary);cursor:pointer;padding:0;font-weight:600}
+/* worker */
+.grid2{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+@media(max-width:980px){.grid2{grid-template-columns:1fr}}
+.task{border:1px solid var(--border);border-radius:12px;padding:18px;background:var(--surface);margin-bottom:14px;box-shadow:var(--shadow)}
+.task .head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.code{font-family:Consolas,monospace;font-weight:700;direction:ltr;unicode-bidi:embed;background:var(--surface2);border:1px solid var(--border);padding:2px 10px;border-radius:8px}
+.q{font-size:18px;font-weight:700;margin:6px 0 14px}
+.opts{display:grid;gap:10px}.opts.two{grid-template-columns:1fr 1fr}
+.opt{border:2px solid var(--border);background:var(--surface);border-radius:12px;padding:14px;cursor:pointer;font-weight:700;transition:.15s;text-align:center}
+.opt:hover{border-color:var(--primary);background:var(--primary-soft)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:99px;font-size:12.5px;font-weight:700;background:var(--primary-soft);color:var(--primary)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.warn{background:var(--warn-soft);color:var(--warn)}.tag.bad{background:var(--bad-soft);color:var(--bad)}.tag.gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.empty{text-align:center;color:var(--muted);padding:44px 20px;border:2px dashed var(--border);border-radius:14px}
+.empty .big{font-size:38px;margin-bottom:6px}
+.step-text{background:var(--surface2);border-radius:10px;padding:12px 14px;margin:8px 0 12px;border-inline-start:4px solid var(--primary)}
+/* leader */
+.tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.tab{padding:10px 18px;border:0;background:none;cursor:pointer;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--primary);border-color:var(--primary)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{padding:16px 18px;border-radius:var(--r);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+.kpi:hover{transform:translateY(-2px)} .kpi.on{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.kpi b{font-size:30px;display:block;line-height:1.2}.kpi span{color:var(--muted);font-size:13.5px;font-weight:600}
+.depts{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.dept{flex:1;min-width:150px;padding:12px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.dept.on{border-color:var(--primary);background:var(--primary-soft)}.dept b{font-size:20px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.toolbar input{max-width:300px}.toolbar select{width:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:start;color:var(--muted);font-size:13px;font-weight:700;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);position:sticky;top:0}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tablewrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+tr.row{cursor:pointer}tr.row:hover td{background:var(--surface2)}
+.dots{display:flex;gap:4px;margin-top:6px}.dots i{width:18px;height:6px;border-radius:3px;background:var(--border)}.dots i.d{background:var(--ok)}.dots i.c{background:var(--primary)}.dots i.c.o{background:var(--bad)}
+/* drawer */
+.overlay{position:fixed;inset:0;background:rgba(10,15,30,.45);display:flex;justify-content:flex-start;z-index:50;animation:fade .15s}
+.drawer{width:min(620px,100%);height:100%;background:var(--bg);overflow:auto;padding:24px;box-shadow:var(--shadow);animation:slide .2s}
+@keyframes fade{from{opacity:0}}@keyframes slide{from{transform:translateX(-40px);opacity:0}}
+.tl{position:relative;margin:0;padding:0;list-style:none}
+.tl li{position:relative;padding:0 38px 20px 0}
+.tl li:before{content:"";position:absolute;right:13px;top:26px;bottom:-2px;width:2px;background:var(--border)}
+.tl li:last-child:before{display:none}
+.tl .dot{position:absolute;right:0;top:2px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--surface2);border:2px solid var(--border);color:var(--muted)}
+.tl .done .dot{background:var(--ok);border-color:var(--ok);color:#fff}.tl .cur .dot{background:var(--primary);border-color:var(--primary);color:#fff}.tl .cur.late .dot{background:var(--bad);border-color:var(--bad)}
+.tl .box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.meta{color:var(--muted);font-size:13px;margin-top:6px;display:flex;gap:14px;flex-wrap:wrap}
+.qa{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border)}.qa:last-child{border:0}
+/* process ref */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+.pgrid ol{margin:10px 0 0;padding-inline-start:20px}.pgrid li{margin-bottom:8px}
+.pgrid li small{color:var(--muted)}
+/* modal & toast */
+.modal{position:fixed;inset:0;background:rgba(10,15,30,.5);display:grid;place-items:center;z-index:80;padding:20px}
+.modal .card{width:min(460px,100%)}
+.actions{display:flex;gap:10px;justify-content:flex-start;margin-top:16px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--text);color:var(--bg);padding:11px 20px;border-radius:12px;box-shadow:var(--shadow);font-weight:600;animation:fade .2s}
+.toast.bad{background:var(--bad);color:#fff}
+.num{font-feature-settings:"tnum";direction:ltr;unicode-bidi:embed}
+.loading{display:grid;place-items:center;height:100%;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">جارٍ التحميل…</div></div>
+<div id="toast"></div>
+<script>
+'use strict';
+// ---------- bridge ----------
+const pending = new Map(); let seq = 0; var S;
+window.chrome.webview.addEventListener('message', e => {
+  const m = e.data, p = pending.get(m.id); if (!p) return; pending.delete(m.id);
+  if (m.ok) p.res(m.result); else { if (m.error === 'يجب تسجيل الدخول أولًا.' && S.user) { S.user = null; render(); toast('انتهت الجلسة، سجّل الدخول من جديد', true); } p.rej(new Error(m.error)); }
+});
+const call = (method, args = {}) => new Promise((res, rej) => {
+  const id = ++seq; pending.set(id, { res, rej });
+  window.chrome.webview.postMessage({ id, method, args });
+});
+
+// ---------- utils ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dtf = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' });
+const fmt = iso => iso ? dtf.format(new Date(iso)) : '—';
+function dur(ms) {
+  if (ms < 0) ms = 0; const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60);
+  if (d > 0) return `${d} يوم${h ? ' و ' + h + ' ساعة' : ''}`; if (h > 0) return `${h} ساعة`; return `${m} دقيقة`;
+}
+function toast(msg, bad) {
+  const t = document.createElement('div'); t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = msg;
+  $('#toast').appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+async function act(fn, ok) { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message, true); return undefined; } }
+function confirmBox({ title, body, okText = 'تأكيد', cls = 'primary', input }) {
+  return new Promise(res => {
+    const m = document.createElement('div'); m.className = 'modal';
+    m.innerHTML = `<div class="card" role="dialog"><h2>${esc(title)}</h2><div>${body || ''}</div>
+      ${input ? `<label class="f" style="margin-top:12px"><span>${esc(input.label)}</span>${input.multiline ? '<textarea rows="3" id="mi"></textarea>' : `<input id="mi" type="${input.type || 'text'}" dir="ltr">`}</label>` : ''}
+      <div class="actions"><button class="btn ${cls}" id="mok">${esc(okText)}</button><button class="btn" id="mno">إلغاء</button></div></div>`;
+    document.body.appendChild(m);
+    const done = v => { m.remove(); res(v); };
+    m.querySelector('#mok').onclick = () => done(input ? (m.querySelector('#mi').value) : true);
+    m.querySelector('#mno').onclick = () => done(null);
+    m.addEventListener('keydown', e => { if (e.key === 'Escape') done(null); if (e.key === 'Enter' && !input?.multiline) m.querySelector('#mok').click(); });
+    (m.querySelector('#mi') || m.querySelector('#mok')).focus();
+  });
+}
+
+// ---------- state ----------
+S = { boot: null, user: null, tab: 'dash', filter: 'all', dept: '', q: '', proc: '', cases: null, tasks: null, users: null, processes: null, timer: null, detailId: null };
+const view = html => { $('#app').innerHTML = html; };
+
+async function start() {
+  try { S.boot = await call('boot'); } catch (e) { S.boot = { dbError: e.message, dbPath: '' }; }
+  S.user = S.boot.user;
+  render();
+}
+
+function render() {
+  clearInterval(S.timer);
+  if (S.boot.dbError) return renderDbError();
+  if (S.boot.needsSetup) return renderSetup();
+  if (!S.user) return renderLogin();
+  S.user.role === 'leader' ? renderLeader() : renderWorker();
+}
+
+function shell(inner) {
+  const u = S.user, init = esc(u.name.trim()[0] || '?');
+  view(`<div class="topbar"><div class="brand"><div class="logo">${ICON.doc}</div>متتبع مراجعة البنود</div><div class="spacer"></div>
+    <div class="chip-user"><div class="avatar">${init}</div><div><b>${esc(u.name)}</b><small>${u.role === 'leader' ? 'القائد' : esc(u.dept)}</small></div></div>
+    <button class="btn" id="logout">تسجيل الخروج</button></div><div class="main"><div class="wrap">${inner}</div></div>`);
+  $('#logout').onclick = async () => { await call('logout'); S.user = null; S.cases = S.tasks = S.users = null; render(); };
+}
+const ICON = { doc: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13l2 2 4-4"/></svg>' };
+
+// ---------- auth screens ----------
+function dbBlock(open) {
+  return `<details ${open ? 'open' : ''} style="margin-top:18px"><summary class="link" style="list-style:none;text-align:center">إعدادات الاتصال بالخادم</summary>
+    <p class="sub" style="font-size:13px;margin:10px 0 8px">اكتب عنوان الجهاز الذي يعمل عليه الخادم، مثال: <span dir="ltr">https://clausetracker.example.com</span></p>
+    <input id="dbp" dir="ltr" value="${esc(S.boot.serverUrl)}"><div class="actions"><button type="button" class="btn sm primary" id="dbsave">حفظ واتصال</button></div></details>`;
+}
+function bindDb() {
+  const b = $('#dbsave'); if (!b) return;
+  b.onclick = async () => { const r = await act(() => call('setServer', { url: $('#dbp').value })); if (r) { S.boot = r; S.user = null; render(); } };
+}
+function renderDbError() {
+  view(`<div class="auth"><div class="card"><h1 class="center">تعذر الاتصال بالخادم</h1><div class="err">${esc(S.boot.dbError)}</div>
+    <p class="sub center">تأكد من تشغيل الخادم ومن اتصال هذا الجهاز بالشبكة، أو صحّح العنوان.</p>${dbBlock(true)}
+    <div class="actions"><button class="btn" id="retry">إعادة المحاولة</button></div></div></div>`);
+  bindDb(); $('#retry').onclick = start;
+}function renderSetup() {
+  view(`<div class="auth"><form class="card" id="f"><div class="logo">${ICON.doc}</div><h1 class="center">الإعداد الأول</h1>
+    <p class="sub center">أنشئ حساب القائد. يمكنك لاحقًا إضافة حسابات الإدارات من شاشة المستخدمين.</p><div id="e"></div>
+    ${S.boot.setupKeyRequired ? '<label class="f"><span>مفتاح الإعداد (من مسؤول الخادم)</span><input id="sk" type="password" dir="ltr" required autofocus></label>' : ''}
+    <label class="f"><span>الاسم الكامل</span><input id="n" required ${S.boot.setupKeyRequired ? '' : 'autofocus'}></label>
+    <label class="f"><span>اسم المستخدم</span><input id="u" dir="ltr" required></label>
+    <label class="f"><span>كلمة المرور (6 أحرف على الأقل)</span><input id="p" type="password" dir="ltr" required></label>
+    <button class="btn primary big" style="width:100%">إنشاء حساب القائد</button>${dbBlock()}</form></div>`);
+  bindDb();
+  $('#f').onsubmit = async e => { e.preventDefault();
+    try { S.user = await call('setup', { setupKey: ($('#sk') || {}).value || '', name: $('#n').value, username: $('#u').value, password: $('#p').value }); S.boot.needsSetup = false; render(); }
+    catch (er) { $('#e').innerHTML = `<div class="err">${esc(er.message)}</div>`; } };
+}
+function renderLogin() {
+  view(`<div class="auth"><form class="card" id="f"><div class="logo">${ICON.doc}</div><h1 class="center">متتبع مراجعة البنود</h1>
+    <p class="sub center">سجّل الدخول للمتابعة</p><div id="e"></div>
+    <label class="f"><span>اسم المستخدم</span><input id="u" dir="ltr" autofocus required></label>
+    <label class="f"><span>كلمة المرور</span><input id="p" type="password" dir="ltr" required></label>
+    <button class="btn primary big" style="width:100%">دخول</button>${dbBlock()}</form></div>`);
+  bindDb();
+  $('#f').onsubmit = async e => { e.preventDefault();
+    try { S.user = await call('login', { username: $('#u').value, password: $('#p').value }); S.tab = 'dash'; render(); }
+    catch (er) { $('#e').innerHTML = `<div class="err">${esc(er.message)}</div>`; $('#p').select(); } };
+}
+
+// ---------- worker ----------
+async function renderWorker(keepFocus) {
+  if (!document.querySelector('#wk')) {
+    shell(`<div class="grid2"><div class="card"><h2>إدخال إيصال جديد</h2><p class="sub" style="font-size:14px">أدخل كود الإيصال ثم أجب عن الأسئلة لتحديد المسار.</p>
+      <form id="nf"><label class="f"><span>كود الإيصال</span><input id="rc" dir="ltr" autocomplete="off" placeholder="2024-00123" autofocus></label>
+      <button class="btn primary big" style="width:100%">بدء المراجعة</button></form></div>
+      <div id="wk"><div class="loading" style="height:200px">جارٍ التحميل…</div></div></div>`);
+    $('#nf').onsubmit = async e => { e.preventDefault(); const v = $('#rc').value.trim();
+      const r = await act(() => call('createCase', { receipt: v })); if (r) { $('#rc').value = ''; toast('تم إنشاء الحالة، أجب عن السؤال'); renderWorker(); } };
+  }
+  S.timer = setInterval(() => renderWorker(true), 8000);
+  const t = await act(() => call('tasks')); if (!t) return;
+  const sc = $('#wk'); if (!sc) return;
+  if (keepFocus && sc.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA') return;
+  let h = `<h2>مهامي <span class="tag">${t.questions.length + t.steps.length}</span></h2>`;
+  if (!t.questions.length && !t.steps.length) h += `<div class="empty"><div class="big">✓</div><b>لا توجد مهام حاليًا</b><div>ستظهر هنا الأسئلة المطلوبة وخطوات إدارتك عند وصولها.</div></div>`;
+  t.questions.forEach(q => {
+    const two = q.question.options.length === 2;
+    h += `<div class="task"><div class="head"><span class="code">${esc(q.receipt)}</span><span class="tag warn">سؤال مطلوب</span></div>
+      <div class="q">${esc(q.question.text)}</div><div class="opts ${two ? 'two' : ''}">${q.question.options.map(o =>
+        `<button class="opt" data-a="ans" data-id="${q.caseId}" data-q="${q.question.key}" data-v="${o.value}">${esc(o.label)}</button>`).join('')}</div></div>`;
+  });
+  t.steps.forEach(s => {
+    h += `<div class="task"><div class="head"><span class="code">${esc(s.receipt)}</span><span class="tag">دور إدارتك</span></div>
+      <div class="step-text">${esc(s.text)}</div>
+      <div class="meta" style="margin:0 0 12px"><span>المهلة: <b class="num">${s.days}</b> يوم</span><span>وصلت: ${fmt(s.startedAt)}</span></div>
+      <button class="btn ok" data-a="done" data-id="${s.caseId}" data-r="${esc(s.receipt)}">✓ تم إنجاز الخطوة</button></div>`;
+  });
+  sc.innerHTML = h;
+  sc.onclick = async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; const id = +b.dataset.id;
+    if (b.dataset.a === 'ans') { if (await act(() => call('answer', { caseId: id, question: b.dataset.q, value: b.dataset.v }))) renderWorker(); }
+    else {
+      const note = await confirmBox({ title: 'تأكيد إنجاز الخطوة', body: `<p>سيتم نقل الحالة <span class="code">${esc(b.dataset.r)}</span> إلى الخطوة التالية ولا يمكن التراجع.</p>`, okText: 'تأكيد الإنجاز', cls: 'ok', input: { label: 'ملاحظة (اختيارية)', multiline: true } });
+      if (note !== null && await act(() => call('completeStep', { caseId: id, note }), 'تم إنجاز الخطوة')) renderWorker();
+    }
+  };
+}
+
+// ---------- leader ----------
+const PNAME = { C1: 'C1', C2: 'C2', C3: 'C3', C4: 'C4', C5: 'C5' };
+function statusOf(c) {
+  if (c.status === 'completed') return `<span class="tag ok">مكتملة</span>`;
+  if (c.state !== 'in_process') return `<span class="tag warn">في انتظار الإجابة</span>`;
+  return c.overdue ? `<span class="tag bad">متأخرة</span>` : `<span class="tag">قيد التنفيذ</span>`;
+}
+function dots(c) {
+  if (!c.process) return '';
+  let h = ''; for (let i = 1; i <= c.stepCount; i++) h += `<i class="${c.status === 'completed' || i < c.step ? 'd' : i === c.step ? 'c' + (c.overdue ? ' o' : '') : ''}"></i>`;
+  return `<div class="dots" title="الخطوة ${c.step} من ${c.stepCount}">${h}</div>`;
+}
+function renderLeader() {
+  const tabs = [['dash', 'لوحة المتابعة'], ['users', 'المستخدمون'], ['procs', 'المسارات والمُدد']];
+  shell(`<div class="tabs">${tabs.map(([k, l]) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-t="${k}">${l}</button>`).join('')}</div><div id="lt"></div>`);
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => { S.tab = b.dataset.t; render(); });
+  ({ dash: leaderDash, users: leaderUsers, procs: leaderProcs })[S.tab]();
+}
+async function leaderDash() {
+  const load = async () => { const d = await act(() => call('dashboard')); if (d) { S.cases = d; paintDash(); } };
+  await load();
+  S.timer = setInterval(async () => { const d = await call('dashboard').catch(() => null); if (d && S.tab === 'dash') { S.cases = d; paintDash(); if (S.detailId && $('#drawer')) openDetail(S.detailId, true); } }, 6000);
+}
+function paintDash() {
+  const d = S.cases, el = $('#lt'); if (!el) return;
+  const focus = document.activeElement?.id, selStart = document.activeElement?.selectionStart;
+  let list = d.cases.filter(c => {
+    if (S.filter === 'open' && c.status !== 'open') return false;
+    if (S.filter === 'questions' && !(c.status === 'open' && c.state !== 'in_process')) return false;
+    if (S.filter === 'overdue' && !c.overdue) return false;
+    if (S.filter === 'completed' && c.status !== 'completed') return false;
+    if (S.dept && !(c.status === 'open' && c.dept === S.dept)) return false;
+    if (S.proc && c.process !== S.proc) return false;
+    if (S.q && !c.receipt.toLowerCase().includes(S.q.toLowerCase())) return false;
+    return true;
+  });
+  const k = (key, n, label) => `<div class="kpi ${S.filter === key ? 'on' : ''}" data-f="${key}"><b class="num" style="text-align:start">${n}</b><span>${label}</span></div>`;
+  el.innerHTML = `<h1>لوحة المتابعة</h1><p class="sub">موقع كل حالة الآن — يتحدث تلقائيًا.</p>
+  <div class="kpis">${k('all', d.cases.length, 'إجمالي الحالات')}${k('open', d.totals.open, 'مفتوحة')}${k('overdue', d.totals.overdue, 'متأخرة عن المهلة')}${k('completed', d.totals.completed, 'مكتملة')}</div>
+  <div class="depts">${d.byDept.map(x => `<div class="dept ${S.dept === x.dept ? 'on' : ''}" data-d="${esc(x.dept)}"><span>${esc(x.dept)}</span><b class="num">${x.count}</b></div>`).join('')}
+    <div class="dept ${S.filter === 'questions' ? 'on' : ''}" data-f="questions"><span>مرحلة الأسئلة</span><b class="num">${d.totals.questions}</b></div></div>
+  <div class="toolbar"><input id="sq" placeholder="بحث بكود الإيصال…" dir="ltr" value="${esc(S.q)}">
+    <select id="sp"><option value="">كل المسارات</option>${['C1','C2','C3','C4','C5'].map(p => `<option ${S.proc === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
+    ${(S.filter !== 'all' || S.dept || S.proc || S.q) ? '<button class="btn sm" id="clr">مسح التصفية</button>' : ''}
+    <div class="spacer"></div><button class="btn" id="exp">تصدير CSV</button></div>
+  <div class="tablewrap"><table><thead><tr><th>كود الإيصال</th><th>المسار</th><th>الموقع الحالي</th><th>الحالة</th><th>المدة المنقضية</th><th>الإنشاء</th></tr></thead><tbody>
+  ${list.map(c => `<tr class="row" tabindex="0" data-id="${c.id}"><td><span class="code">${esc(c.receipt)}</span></td>
+    <td>${c.process ? `<span class="tag gray">${c.process}</span>` : '<span class="tag gray">—</span>'}</td>
+    <td>${c.process ? `<b>${esc(c.dept)}</b>${c.status === 'open' ? '' : ' (انتهت)'}<div class="meta" style="margin:0">الخطوة <span class="num">${c.step}/${c.stepCount}</span></div>${dots(c)}` : (c.pendingQuestion ? `<span style="color:var(--muted)">${esc(c.pendingQuestion)}</span>` : '—')}</td>
+    <td>${statusOf(c)}${c.overdue ? `<div class="meta" style="margin:2px 0 0">تجاوزت مهلة الخطوة</div>` : ''}</td>
+    <td>${dur((c.completedAt ? new Date(c.completedAt) : new Date()) - new Date(c.createdAt))}</td>
+    <td>${fmt(c.createdAt)}</td></tr>`).join('') || `<tr><td colspan="6"><div class="empty" style="border:0">لا توجد حالات مطابقة.</div></td></tr>`}
+  </tbody></table></div>`;
+  el.onclick = e => {
+    const f = e.target.closest('[data-f]'), dd = e.target.closest('[data-d]'), r = e.target.closest('tr.row');
+    if (f) { S.filter = S.filter === f.dataset.f ? 'all' : f.dataset.f; S.dept = ''; paintDash(); }
+    else if (dd) { S.dept = S.dept === dd.dataset.d ? '' : dd.dataset.d; S.filter = 'all'; paintDash(); }
+    else if (r) openDetail(+r.dataset.id);
+    else if (e.target.closest('#clr')) { S.filter = 'all'; S.dept = ''; S.proc = ''; S.q = ''; paintDash(); }
+    else if (e.target.closest('#exp')) act(() => call('exportCsv')).then(p => p && toast('تم حفظ الملف'));
+  };
+  el.onkeydown = e => { const r = e.target.closest?.('tr.row'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(+r.dataset.id); } };
+  $('#sq').oninput = e => { S.q = e.target.value; paintDash(); };
+  $('#sp').onchange = e => { S.proc = e.target.value; paintDash(); };
+  if (focus === 'sq') { const i = $('#sq'); i.focus(); i.setSelectionRange(selStart, selStart); }
+}
+async function openDetail(id, refresh) {
+  const d = await act(() => call('caseDetail', { caseId: id })); if (!d) return;
+  S.detailId = id; const c = d.info; let o = $('#drawer');
+  if (!o) { o = document.createElement('div'); o.id = 'drawer'; o.className = 'overlay'; document.body.appendChild(o);
+    o.onclick = e => { if (e.target === o || e.target.closest('#cl')) { o.remove(); S.detailId = null; } };
+    document.addEventListener('keydown', function esc_(e) { if (e.key === 'Escape') { o.remove(); S.detailId = null; document.removeEventListener('keydown', esc_); } }); }
+  const now = Date.now();
+  o.innerHTML = `<div class="drawer"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
+    <h1><span class="code">${esc(c.receipt)}</span></h1><button class="btn sm" id="cl">إغلاق ✕</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${statusOf(c)}${c.process ? `<span class="tag gray">${c.process} · ${esc(c.processTitle)}</span>` : ''}</div>
+    <div class="card" style="margin-bottom:16px"><div class="meta" style="margin:0"><span>أنشأها: <b>${esc(c.creator)}</b></span><span>${fmt(c.createdAt)}</span>
+      <span>المدة: <b>${dur((c.completedAt ? new Date(c.completedAt) : now) - new Date(c.createdAt))}</b></span>${c.totalDays ? `<span>إجمالي المهلة: <b class="num">${c.totalDays}</b> يوم</span>` : ''}</div></div>
+    <h2>الأسئلة والإجابات</h2><div class="card" style="margin-bottom:16px">${d.answers.length ? d.answers.map(a => `<div class="qa"><div>${esc(a.question)}</div><div style="text-align:end"><b>${esc(a.answer)}</b><div class="meta" style="margin:0;justify-content:flex-end">${esc(a.by || '')} · ${fmt(a.at)}</div></div></div>`).join('') : '<span style="color:var(--muted)">لم تتم الإجابة بعد.</span>'}
+      ${c.pendingQuestion ? `<div class="qa"><div>${esc(c.pendingQuestion)}</div><span class="tag warn">بانتظار الإجابة</span></div>` : ''}</div>
+    ${d.steps ? `<h2>مسار الخطوات</h2><ul class="tl">${d.steps.map(s => {
+      const done = !!s.completedAt, cur = !done && !!s.startedAt;
+      const late = s.dueAt && ((done ? new Date(s.completedAt) : now) > new Date(s.dueAt));
+      return `<li class="${done ? 'done' : cur ? 'cur' : ''} ${late && cur ? 'late' : ''}"><div class="dot">${done ? '✓' : s.no}</div><div class="box">
+        <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(s.dept)}</b>${done ? `<span class="tag ok">أُنجزت</span>` : cur ? `<span class="tag ${late ? 'bad' : ''}">${late ? 'متأخرة' : 'الخطوة الحالية'}</span>` : '<span class="tag gray">لم تبدأ</span>'}</div>
+        <div style="margin-top:6px">${esc(s.text)}</div>
+        <div class="meta"><span>المهلة <b class="num">${s.days}</b> يوم</span>${s.startedAt ? `<span>بدأت: ${fmt(s.startedAt)}</span>` : ''}
+          ${done ? `<span>انتهت: ${fmt(s.completedAt)}</span><span>المدة: ${dur(new Date(s.completedAt) - new Date(s.startedAt))}</span><span>بواسطة: ${esc(s.by || '')}</span>` : cur ? `<span>منذ: ${dur(now - new Date(s.startedAt))}</span><span>الاستحقاق: ${fmt(s.dueAt)}</span>` : ''}</div>
+        ${s.note ? `<div class="step-text" style="margin:8px 0 0;font-size:14px">📝 ${esc(s.note)}</div>` : ''}</div></li>`; }).join('')}</ul>` : ''}</div>`;
+  $('#cl').focus();
+}
+async function leaderUsers() {
+  const draw = async () => {
+    const us = await act(() => call('users')); if (!us || !$('#lt')) return;
+    $('#lt').innerHTML = `<h1>المستخدمون</h1><p class="sub">حسابات فردية لكل موظف. تحدد الإدارة ما يراه العامل من مهام.</p>
+    <div class="grid2" style="grid-template-columns:1fr 340px"><div class="tablewrap"><table><thead><tr><th>الاسم</th><th>المستخدم</th><th>الإدارة</th><th>الحالة</th><th></th></tr></thead><tbody>
+    ${us.map(u => `<tr><td><b>${esc(u.name)}</b></td><td class="num" style="text-align:start">${esc(u.username)}</td><td>${u.role === 'leader' ? '<span class="tag">القائد</span>' : esc(u.dept)}</td>
+      <td>${u.active ? '<span class="tag ok">نشط</span>' : '<span class="tag gray">معطّل</span>'}</td>
+      <td style="white-space:nowrap"><button class="btn sm" data-a="pw" data-id="${u.id}" data-n="${esc(u.name)}">كلمة مرور</button>
+      ${u.id === S.user.id ? '' : `<button class="btn sm ${u.active ? 'danger' : ''}" data-a="tg" data-id="${u.id}" data-v="${!u.active}">${u.active ? 'تعطيل' : 'تفعيل'}</button>`}</td></tr>`).join('')}</tbody></table></div>
+    <form class="card" id="uf"><h2>إضافة مستخدم</h2><div id="ue"></div>
+      <label class="f"><span>الاسم الكامل</span><input id="un" required></label>
+      <label class="f"><span>اسم المستخدم</span><input id="uu" dir="ltr" required></label>
+      <label class="f"><span>كلمة المرور</span><input id="up" type="password" dir="ltr" required></label>
+      <label class="f"><span>الدور / الإدارة</span><select id="ud">${S.boot.departments.map(d => `<option>${esc(d)}</option>`).join('')}<option value="__leader">قائد (مشاهدة كل الحالات)</option></select></label>
+      <button class="btn primary" style="width:100%">إضافة</button></form></div>`;
+    $('#uf').onsubmit = async e => { e.preventDefault(); const dv = $('#ud').value;
+      try { await call('addUser', { name: $('#un').value, username: $('#uu').value, password: $('#up').value, role: dv === '__leader' ? 'leader' : 'worker', dept: dv }); toast('تمت إضافة المستخدم'); draw(); }
+      catch (er) { $('#ue').innerHTML = `<div class="err">${esc(er.message)}</div>`; } };
+    $('#lt').onclick = async e => { const b = e.target.closest('[data-a]'); if (!b) return; const id = +b.dataset.id;
+      if (b.dataset.a === 'tg') { if (await act(() => call('setUserActive', { userId: id, active: b.dataset.v === 'true' }))) draw(); }
+      else { const p = await confirmBox({ title: 'تعيين كلمة مرور جديدة', body: `<p>المستخدم: <b>${esc(b.dataset.n)}</b></p>`, okText: 'حفظ', input: { label: 'كلمة المرور الجديدة', type: 'password' } });
+        if (p !== null) await act(() => call('resetPassword', { userId: id, password: p }), 'تم تغيير كلمة المرور'); } };
+  };
+  draw();
+}
+async function leaderProcs() {
+  const ps = S.processes || (S.processes = await act(() => call('processes'))); if (!ps) return;
+  $('#lt').innerHTML = `<h1>المسارات والمُدد (SLA)</h1><p class="sub">المسارات الخمسة الثابتة وإدارة كل خطوة ومهلتها.</p>
+  <div class="card" style="margin-bottom:18px"><h2>شجرة القرار</h2><div style="line-height:2">
+    <b>س1:</b> هل يوجد تجاوز في البند؟ ← <span class="tag">لا</span> المسار <b>C1</b><br>
+    <b>س2:</b> هل للبند قيمة في العقد؟ ← <span class="tag">لا</span> المسار <b>C5</b><br>
+    <b>س3:</b> هل إجمالي قيمة التجاوزات يتجاوز إجمالي التكلفة؟ ← أكثر من 25%: <b>C4</b> · حتى 25%: <b>C3</b> · لم يتجاوز: <b>C2</b></div></div>
+  <div class="pgrid">${ps.map(p => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0"><span class="tag">${p.code}</span> ${esc(p.title)}</h2></div>
+    <div class="meta">إجمالي المهلة: <b class="num">${p.totalDays}</b> يوم · <span class="num">${p.steps.length}</span> ${p.steps.length === 1 ? 'خطوة' : 'خطوات'}</div>
+    <ol>${p.steps.map(s => `<li><b>${esc(s.dept)}</b> <small class="num">— ${s.days} يوم</small><br><small>${esc(s.text)}</small></li>`).join('')}</ol></div>`).join('')}</div>`;
+}
+
+start();
+</script>
+</body>
+</html>

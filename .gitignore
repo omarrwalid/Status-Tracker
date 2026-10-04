@@ -1,0 +1,20 @@
+# build output
+bin/
+obj/
+dist/
+*.exe
+*.pdb
+*.dll
+
+# logs / runtime files written by the tunnel scripts
+*.log
+*.out
+tunnel-url.txt
+
+# SECRETS - never commit real connection strings or keys
+Server/WindowsServer/
+release/WindowsServer/appsettings.json
+**/appsettings.Production.json
+**/appsettings.Local.json
+.env
+*.env
